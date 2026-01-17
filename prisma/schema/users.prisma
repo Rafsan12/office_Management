@@ -1,0 +1,122 @@
+model User {
+    id                  String               @id @default(uuid())
+    email               String               @unique
+    firstName           String
+    lastName            String
+    password            String
+    systemRole          SystemRole           @default(USER)
+    createdAt           DateTime             @default(now())
+    updatedAt           DateTime             @updatedAt
+    organizationMembers OrganizationMember[]
+}
+
+enum SystemRole {
+    ADMIN
+    USER
+}
+
+model Organization {
+    id          String  @id @default(uuid())
+    name        String
+    email       String  @unique
+    slug        String  @unique
+    address     String
+    phoneNumber String
+    isActive    Boolean @default(true)
+
+    createdAt           DateTime             @default(now())
+    updatedAt           DateTime             @updatedAt
+    organizationMembers OrganizationMember[]
+    departments         Department[]
+    teams               Team[]
+    teamMembers         TeamMember[]
+}
+
+model OrganizationMember {
+    id             String           @id @default(uuid())
+    userId         String
+    user           User             @relation(fields: [userId], references: [id])
+    organizationId String
+    organization   Organization     @relation(fields: [organizationId], references: [id])
+    role           OrganizationRole @default(EMPLOYEE)
+    isOwner        Boolean          @default(false)
+
+    joinedAt        DateTime         @default(now())
+    isActive        Boolean          @default(true)
+    createdAt       DateTime         @default(now())
+    updatedAt       DateTime         @updatedAt
+    employeeProfile EmployeeProfile?
+    departments     Department[]
+    teams           Team[]
+
+    @@unique([userId, organizationId])
+}
+
+enum OrganizationRole {
+    OWNER
+    ORG_ADMIN
+    HR
+    MANAGER
+    EMPLOYEE
+}
+
+model EmployeeProfile {
+    id                   String             @id @default(uuid())
+    organizationMemberId String             @unique
+    organizationMember   OrganizationMember @relation(fields: [organizationMemberId], references: [id])
+    position             String
+    level                EmployeeLevel
+    department           String
+    hiredAt              DateTime
+    probationEndsAt      DateTime?
+    createdAt            DateTime           @default(now())
+    updatedAt            DateTime           @updatedAt
+}
+
+enum EmployeeLevel {
+    INTERN
+    JUNIOR
+    MID
+    SENIOR
+    LEAD
+}
+
+model Department {
+    id             String              @id @default(uuid())
+    organizationId String
+    organization   Organization        @relation(fields: [organizationId], references: [id])
+    name           String
+    managerId      String?
+    manager        OrganizationMember? @relation(fields: [managerId], references: [id])
+    createdAt      DateTime            @default(now())
+    updatedAt      DateTime            @updatedAt
+
+    @@unique([organizationId, name])
+}
+
+model Team {
+    id             String              @id @default(uuid())
+    organizationId String
+    organization   Organization        @relation(fields: [organizationId], references: [id])
+    name           String
+    leadId         String?
+    lead           OrganizationMember? @relation(fields: [leadId], references: [id])
+    createdAt      DateTime            @default(now())
+    updatedAt      DateTime            @updatedAt
+    teamMembers    TeamMember[]
+
+    @@unique([organizationId, name])
+}
+
+model TeamMember {
+    id     String @id @default(uuid())
+    teamId String
+    team   Team   @relation(fields: [teamId], references: [id])
+
+    organizationId String
+    organization   Organization @relation(fields: [organizationId], references: [id])
+    createdAt      DateTime     @default(now())
+    updatedAt      DateTime     @updatedAt
+
+    @@unique([teamId, organizationId])
+}
